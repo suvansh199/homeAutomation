@@ -1,0 +1,151 @@
+//Arduino Code
+//Execution as done in the Arduino without gesture control
+
+#include <Wire.h>
+#include <ADXL345.h>
+ADXL345 accelerometer;
+#define accel_module (0x53)
+byte values[6];
+char output[512];
+
+void setup(){
+pinMode(7,OUTPUT);
+pinMode(6,OUTPUT);
+pinMode(5,OUTPUT);
+pinMode(4,OUTPUT);
+digitalWrite(7,HIGH);
+digitalWrite(6,HIGH);
+digitalWrite(5,HIGH);
+digitalWrite(4,HIGH);
+Wire.begin();
+Serial.begin(9600);
+Wire.beginTransmission(accel_module);
+Wire.write(0x2D);
+Wire.write(0);
+Wire.endTransmission();
+Wire.beginTransmission(accel_module);
+Wire.write(0x2D);
+Wire.write(16);
+Wire.endTransmission();
+Wire.beginTransmission(accel_module);
+Wire.write(0x2D);
+Wire.write(8);
+Wire.endTransmission();
+accelerometer.setTapDetectionX(0);       // Don't check tap on X-Axis
+ accelerometer.setTapDetectionY(0);       // Don't check tap on Y-Axis
+  accelerometer.setTapDetectionZ(1);       // Check tap on Z-Axis
+  // or
+  // accelerometer.setTapDetectionXYZ(1);  // Check tap on X,Y,Z-Axis
+
+  accelerometer.setTapThreshold(2.5);      // Recommended 2.5 g
+  accelerometer.setTapDuration(0.02);      // Recommended 0.02 s
+  accelerometer.setDoubleTapLatency(0.10); // Recommended 0.10 s
+  accelerometer.setDoubleTapWindow(0.30);  // Recommended 0.30 s
+
+  // Select INT 1 for get activities
+  accelerometer.useInterrupt(ADXL345_INT1);
+
+  // Check settings
+  checkSetup();
+}
+void checkSetup()
+{
+  if (accelerometer.getTapDetectionX()) {  }
+  if (accelerometer.getTapDetectionY()) {  }
+  if (accelerometer.getTapDetectionZ()) {  }
+}
+
+
+int count = 0;
+
+
+void loop(){
+count+=1;
+int xyzregister = 0x32;
+int x, y, z;
+
+Wire.beginTransmission(accel_module);
+Wire.write(xyzregister);
+Wire.endTransmission();
+
+Wire.beginTransmission(accel_module);
+Wire.requestFrom(accel_module, 6);
+
+int i = 0;
+while(Wire.available()){
+values[i] = Wire.read();
+i++;
+}
+Wire.endTransmission();
+x = (((int)values[1]) << 8) | values[0]; 
+y = (((int)values[3])<< 8) | values[2]; 
+z = (((int)values[5]) << 8) | values[4]; 
+sprintf(output, "%d %d %d", x, y, z);
+Serial.print(output); 
+Serial.write(10);
+
+led1();
+  Vector norm = accelerometer.readNormalize();
+
+  // Read activities
+  Activites activ = accelerometer.readActivites();
+
+  if (activ.isDoubleTap)
+  {
+    Serial.println("D");
+  } else
+  if (activ.isTap)
+  {
+    Serial.println("T");
+  } 
+delay(200);
+
+}
+
+void led1(){
+  if (Serial.available() > 0) {
+  char serialListener = Serial.read();
+    if (serialListener == '4') {
+        digitalWrite(4, HIGH);
+        Serial.print("Led4");
+        Serial.println();
+     }
+    else if (serialListener == '0') {
+            digitalWrite(4, LOW);
+            Serial.print("Led4");
+        Serial.println();
+     }
+    if (serialListener == '5') {
+        digitalWrite(5, HIGH);
+        Serial.print("Led3");
+        Serial.println();
+     }
+    else if (serialListener == '1') {
+            digitalWrite(5, LOW);
+            Serial.print("Led3");
+        Serial.println();
+     }
+           if (serialListener == '6') {
+        digitalWrite(6, HIGH);
+        Serial.print("Led2");
+        Serial.println();
+     }
+    else if (serialListener == '2') {
+            digitalWrite(6, LOW);
+            Serial.print("Led2");
+        Serial.println();
+     }
+    if (serialListener == '7') {
+        
+        digitalWrite(7, HIGH);
+        Serial.print("Led1");
+        Serial.println();
+     }
+    else if (serialListener == '3') {
+            digitalWrite(7, LOW);
+            Serial.print("Led1");
+        Serial.println();
+     }
+  }
+
+}
